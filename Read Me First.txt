@@ -1,0 +1,161 @@
+encoding: utf-8
+
+
+
+       ╭──────────────────────────────────────────────╮
+       │                                              │
+       │                   _                          │
+       │       /\         | |                         │
+       │      /  \   _ __ | |_ ___  ___               │
+       │     / /\ \ | '_ \| __/ _ \/ __|              │
+       │    / ____ \| |_) | || (_) \__ \              │
+       │   /_/    \_\ .__/ \__\___/|___/_____________ │
+       │            | |                               │
+       │            |_|                               │
+       ╰──────────────────────────────────────────────╯
+         Aptos Web Server
+         by Talus Baddley
+
+
+
+
+Aptos:
+A tucked-away town in California;
+an Ohlone word meaning “the meeting of two creeks.”
+
+
+
+
+
+#
+# Basic Use
+#
+
+Change to the project folder and do
+    ./aptos conf/config.xml
+to run the web server according to the example config file. Or, substitute your 
+own config file on the command line.
+
+Being that the server is written in JRuby, there is some wicked startup lag (on 
+the order of ~6 seconds), so wait for “Server up on xxxx” before hitting the 
+browser.
+
+Upon making the first request, you’ll see a warning on the console about 
+“ambiguous Java methods found.” This is because of a slight mismatch in 
+overloaded methods, which does not affect the execution of the server.
+
+
+
+
+#
+# Project Structure
+#
+
+The file to run (aptos) is just a shell script that kicks off the server. The 
+actual source files live in the src folder.
+
+In the src folder, the main program lives in multiserver.rb. It is responsible 
+for setting up the server, and listening for and dispatching requests.
+
+Also in src:
+    - Configuration and ConfigurationException.
+      These were provided by you (with some additions of my own).
+    
+    - httphandler.rb.
+      This is the file in which all requests are handled. It uses
+     
+    - httprequest.rb and localresource.rb.
+      These interpret the client’s requests, and map them to on-disk
+      files, respectively.
+     
+    - persistentconnection.rb
+      A PersistentConnection object manages the lifetime (and timeout) of
+      client requests. It is initialized by MultiServer and is bound
+      to scheduled calls to HTTPRequest#process. It is itself a
+      Runnable, and, by being put in an Executor queue, cleans up
+      and times out its connection if it becomes stale.
+    
+    - httperrors.rb
+      Gives a basic framework for HTTP-based errors (like 404).
+      Anywhere in the execution of a request, an HTTPError
+      can be raised, which provides enough information to write
+      an intelligible response back to the client.
+    
+    - loblog.rb
+      Custom wrapper around Ruby’s Logger, that gets everything in
+      the right format.
+    
+    - config+bootstrap.rb
+      An extension (er, that is Category) on MultiServer
+      that provides bootstrapping helper methods
+      which needn’t clutter up the main file. Includes tasks like
+      getting and interpreting the config file.
+
+    - The mime folder
+      contains a comprehensive database of all official mime types,
+      as compiled by Austin Ziegler and Mark Overmeer
+      (https://github.com/halostatue/mime-types). I could have just returned
+      the required types, but why not return all types when that
+      information is so readily knowable?
+    
+    - The categories folder
+      contains a number of categories (written by me) on standard
+      classes to add functionality.
+
+Outside src, the meta folder contains my modified source for Configuration, and 
+the JRuby Jar. The conf folder contains my xml configuration file. You don’t 
+need to overwrite this if you don’t want; instead you can just specify the path 
+to yours on the command line when you invoke Aptos. The logs folder is 
+presently empty; when you run Aptos, it will contain the log file.
+
+
+
+
+
+#
+# On JRuby
+#
+
+You DO NOT need to have JRuby installed to run Aptos. If you inspect the main 
+shell script launcher, you’ll find that it simply launches the complete 
+jruby.jar in Java, running multiserver.rb as its program. This package should 
+be entirely self-contained (providing you have an up-to-date Java working on 
+your computer).
+
+I wrote this in JRuby because it has real multithreading (not that it makes a 
+huge difference for such a small project), and because Ruby’s string and i/o 
+parsing capabilities are stellar compared to Java’s. You won’t actually find 
+too many references to Java, except for the use of its Executors and returned 
+Futures.
+
+
+
+
+
+#
+# Miscellanea
+#
+
+All requests time out after ten seconds of inactivity. This clock is not 
+updated between lines in the request header, however. So paste in your request 
+to telnet if you don’t want the TCP connection abruptly dropped.
+
+As a known limitation, this server may drop transfers on connections slower 
+than 800 kbps. This is not a problem for localhost work, but the timeout should 
+be increased (or altered in behaviour) for real network running. This does not 
+affect files larger than 1 MB.
+
+Aptos caches all files it transfers, as long as they’re 1 MB or less. It uses a 
+WeakHashMap, so the cache is flushed on garbage collection.
+
+Aptos supports persistent connections. If you want to inspect this activity, 
+you can run aptos with the -log-debug flag. This will cause additional messages 
+to be logged, documenting when each connection was made, and when each was 
+scheduled for inactivity check and pruned (or left to complete). It will also 
+show when the cache was used to transfer a file.
+
+You can also specify a custom port for Aptos to use in the config file (see 
+mine for example), as well as the directory default document, which is used in 
+place of a directory listing.
+
+

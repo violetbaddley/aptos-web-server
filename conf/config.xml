@@ -1,0 +1,16 @@
+<?xml version='1.0'?>
+
+<webserver
+    title="Aptos"
+    date="October 2013"
+    author="Talus Baddley"
+>
+
+<context documentRoot="/Users/taldar/Sites/fountainpen"></context>
+<context defaultDocument="/Users/taldar/Sites/fountainpen/index.html"></context> 
+<context directoryDefaultDocument="index.html"></context>
+<context port="2880"></context>
+
+<logfile log="./logs/aptos.log"></logfile> 
+
+</webserver>

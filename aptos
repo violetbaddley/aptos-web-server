@@ -1,0 +1,2 @@
+#!/bin/sh
+java -jar meta/jruby.jar src/multiserver.rb $*
